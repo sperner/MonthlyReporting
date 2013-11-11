@@ -108,27 +108,6 @@ ForEach( $vm in Get-VM|Sort Name )
 	}
 	$row.Tools =		$guest.ToolsRunningStatus
 	$row.Notizen =		$vm.Notes
-	IF( $creds.Host.Contains("smc")  )
-	{
-		$row.Ansprechpartner =	($vm | Get-Annotation -CustomAttribute "Ansprechpartner").Value
-		$row.Telefon =		($vm | Get-Annotation -CustomAttribute "Telefon").Value
-		$row.Typ =		($vm | Get-Annotation -CustomAttribute "Typ").Value
-		$row.Wartungszeit =	($vm | Get-Annotation -CustomAttribute "Wartungszeit").Value
-	}
-	ELSEIF( $creds.Host.Contains("tvc")  )
-	{
-		$row.Ansprechpartner =	($vm | Get-Annotation -CustomAttribute "Bearbeiter").Value
-		$row.Telefon =		""
-		$row.Typ =		""
-		$row.Wartungszeit =	""
-	}
-	ELSE
-	{
-		$row.Ansprechpartner =	""
-		$row.Telefon =		""
-		$row.Typ =		""
-		$row.Wartungszeit =	""
-	}
 	$list += $row
 
 	# Count OS for summary
