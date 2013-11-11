@@ -1,22 +1,22 @@
 ###########################################################################################################
 #                                                                                                         #
-# File:          fetchMachines.ps1                                                                        #
+# File:          fetchTemplates.ps1                                                                       #
 #                                                                                                         #
-# Purpose:       Script to get monthly status lists from a VMware vCenter about installed VirtualMachines #
+# Purpose:       Script to get monthly status lists from a VMware vCenter about installed Templates       #
 #                from a connected vCenter Server                                                          #
 #                                                                                                         #
 # Author:        Sven Sperner <cethss@gmail.com>                                                          #
 #                                                                                                         #
-# Last edited:   08.11.2013                                                                               #
+# Last edited:   08.05.2012                                                                               #
 #                                                                                                         #
 # Requirements:  Microsoft Windows PowerShell 2.0 + VMware PowerCLI 5.0.1                                 #
 #                                                                                                         #
 # Usage:                                                                                                  #
-#  PowerShell -PSConsoleFile "C:\{Path2PowerCLI}\vim.psc1" -command C:\{Path2Script}\fetchMachines.ps1    #
+#  PowerShell -PSConsoleFile "C:\{Path2PowerCLI}\vim.psc1" -command C:\{Path2Script}\fetchTemplates.ps1   #
 #                                                                                                         #
 # Usage example:                                                                                          #
 #  PowerShell -PSConsoleFile "C:\Programme\VMware\Infrastructure\vSphere PowerCLI\vim.psc1" `             #
-#             -command "C:\monthlyReporting\fetchMachines.ps1"                                            #
+#             -command "C:\monthlyReporting\fetchTemplates.ps1"                                           #
 #                                                                                                         #
 #                    This program is distributed in the hope that it will be useful,                      #
 #                    but WITHOUT ANY WARRANTY; without even the implied warranty of                       #
@@ -61,53 +61,47 @@ $otherOS = 0;
 
 
 
-# Get VM-information row by row:
-# -------------------------------
+# Get Template information row by row:
+# ------------------------------------
 Write-Host ""
-Write-Host "Collecting VirtualMachine information from $($server.Name):"
-$vmcount = 0
-ForEach( $vm in Get-VM|Sort Name )
+Write-Host "Collecting Template information from $($server.Name) :"
+$templatecount = 0
+ForEach( $template in Get-Template|Sort Name )
 {
-	$view = Get-View( $vm )
+	$view = Get-View( $template )
+	$runtime = $view.Runtime
 	$summary = $view.Summary
 	$storage = $summary.Storage
-	$quickstats = $summary.QuickStats
 	$guest = $summary.Guest
-	$config = $summary.Config
-	$row = "" | Select Cluster,Name,State,Status,Host,GuestOS,Provisioned,Used,NumCPU,CPU,Memory,GuestMem,MaxMem, `
-			NumNic,IP,DNSname,Uptime,Tools,Notizen,Ansprechpartner,Telefon,Typ,Wartungszeit
-	$row.Cluster =		($vm | Get-Cluster).Name
-	$row.Name =		$vm.Name
-	$row.State =		$vm.PowerState
+	$config = $view.Config
+	$hardware = $config.Hardware
+	$row = "" | Select Name,Id,State,Status,Host,GuestOS,Provisioned,Used,NumCPU,MaxMem,Uptime, `
+			NumNic,IP,DNSname,Tools,Notizen,Ansprechpartner,Telefon,Typ,Wartungszeit,Datastore
+	$row.Name =		$template.Name
+	$row.Id =		$template.Id
+	$row.State =		$runtime.PowerState
 	$row.Status =		$summary.OverallStatus
-	$row.Host =		$vm.VMHost
-	$row.GuestOS =		$guest.GuestFullName			#doesn´t get powered-off
-	IF( !$guest.GuestFullName )
-	{
-		$row.GuestOS =	$config.GuestFullName			#gets powered-off
-	}
+	#$row.Host =		$template.VMHost
+	$row.GuestOS =		$config.GuestFullName
 	$row.Provisioned =	[System.Convert]::ToString("{0:f2}" -f (($storage.Committed `
 				+ $storage.Uncommitted)/1GB)) + " GB"
 	$row.Used =		[System.Convert]::ToString("{0:f2}" -f ($storage.Committed/1GB)) + " GB"
-	$row.NumCPU =		$config.numCpu
-	$row.CPU =		[System.Convert]::ToString($quickstats.OverallCpuUsage) + " MHz"
-	$row.Memory =		[System.Convert]::ToString($quickstats.HostMemoryUsage) + " MB"
-	$row.GuestMem =		[System.Convert]::ToString("{0:f0}" -f ($quickstats.GuestMemoryUsage `
-				/ $vm.MemoryMB * 100)) + " %"
-	$row.MaxMem = [System.Convert]::ToString($config.memorySizeMB) + " MB"
-	$row.NumNic =		$config.NumEthernetCards
-	$row.IP =		$guest.IpAddress
-	$row.DNSname =		$guest.HostName
-	IF( $view.runtime.bootTime )
+	$row.NumCPU =		$hardware.NumCPU
+	$row.MaxMem = 		[System.Convert]::ToString($hardware.MemoryMB) + " MB"
+	IF( $runtime.bootTime )
 	{
-		$row.Uptime = New-TimeSpan $view.Runtime.BootTime $(get-date)
+		$row.Uptime = New-TimeSpan $runtime.BootTime $(get-date)
 	}
 	ELSE
 	{
 		$row.Uptime = "not available"
 	}
-	$row.Tools =		$guest.ToolsRunningStatus
-	$row.Notizen =		$vm.Notes
+	$row.NumNic =		$summary.Config.NumEthernetCards
+	$row.IP =		$guest.IpAddress
+	$row.DNSname =		$guest.HostName
+	$row.Tools =		$config.Tools.ToolsVersion
+	$row.Notizen =		$template.Notes
+	$row.Datastore =	$(Get-Datastore -Id $template.DatastoreIdList).Name
 	$list += $row
 
 	# Count OS for summary
@@ -142,13 +136,13 @@ ForEach( $vm in Get-VM|Sort Name )
 		default				{ $otherOS +=1 }
 	}
 
-	$vmcount += 1
-	Write-Host -noNewLine " $vmcount"
+	$templatecount += 1
+	Write-Host -noNewLine " $templatecount"
 	# Limit scanned VMs (for debugging, testing)
-	#if( $vmcount -eq 3 ) {break}
+	#if( $templatecount -eq 3 ) {break}
 }
 Write-Host ""
-Write-Host "Collected information of $vmcount VirtualMachines from $($server.Name)"
+Write-Host "Collected information of $templatecount Templates from $($server.Name)"
 
 
 
@@ -160,7 +154,7 @@ IF( !$(Test-Path "$aktReportDir") )
 {
 	mkdir "$aktReportDir" > $null
 }
-$outfile = "$aktReportDir\VMsList_" + $($server.Name) + "_" + $date + ".csv"
+$outfile = "$aktReportDir\TemplatesList_" + $($server.Name) + "_" + $date + ".csv"
 
 
 
@@ -174,8 +168,8 @@ Write-Host "Saved list in $outfile"
 
 # Create and export summary as txt-file:
 # --------------------------------------
-$summary = "$aktReportDir\VMsList_" + $($server.Name) + "_" + $date + ".summary.txt"
-"Number of all scanned VMs: $vmcount" | Add-Content $summary
+$summary = "$aktReportDir\TemplatesList_" + $($server.Name) + "_" + $date + ".summary.txt"
+"Number of all scanned Templates: $templatecount" | Add-Content $summary
 "" | Add-Content $summary
 "Number of FreeBSD 32-Bit: $fbsd32" | Add-Content $summary
 "Number of FreeBSD 64-Bit: $fbsd64" | Add-Content $summary
@@ -215,7 +209,7 @@ $known = ($fbsd32 + $fbsd64 + $w03e32 + $w03e64 + $w03s32 + $w03s64 + $w08r32 + 
 		+ $wxp_32 + $wxp_64 + $rh5_32 + $rh5_64 + $rh6_32 + $rh6_64 + $so1032 + $so1064 + $su8932 + $su8964 `
 		+ $su1032 + $su1064 + $su1132 + $su1164 + $ubu_32 + $ubu_64 )
 "Got $known known OperatingSystems, with unknown they are $($known + $otherOS)" | Add-Content $summary
-"Which leads to a difference of $($vmcount - $known -$otherOS) to all scanned VMs" | Add-Content $summary
+"Which leads to a difference of $($templatecount - $known -$otherOS) to all scanned Templates" | Add-Content $summary
 Write-Host "Saved summary in $summary"
 
 

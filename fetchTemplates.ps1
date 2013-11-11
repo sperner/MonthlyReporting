@@ -7,7 +7,7 @@
 #                                                                                                         #
 # Author:        Sven Sperner <cethss@gmail.com>                                                          #
 #                                                                                                         #
-# Last edited:   08.05.2012                                                                               #
+# Last edited:   08.11.2013                                                                               #
 #                                                                                                         #
 # Requirements:  Microsoft Windows PowerShell 2.0 + VMware PowerCLI 5.0.1                                 #
 #                                                                                                         #
@@ -101,27 +101,6 @@ ForEach( $template in Get-Template|Sort Name )
 	$row.DNSname =		$guest.HostName
 	$row.Tools =		$config.Tools.ToolsVersion
 	$row.Notizen =		$template.Notes
-	IF( $creds.Host.Contains("smc")  )
-	{
-		$row.Ansprechpartner =	($template | Get-Annotation -CustomAttribute "Ansprechpartner").Value
-		$row.Telefon =		($template | Get-Annotation -CustomAttribute "Telefon").Value
-		$row.Typ =		($template | Get-Annotation -CustomAttribute "Typ").Value
-		$row.Wartungszeit =	($template | Get-Annotation -CustomAttribute "Wartungszeit").Value
-	}
-	ELSEIF( $creds.Host.Contains("tvc")  )
-	{
-		$row.Ansprechpartner =	($template | Get-Annotation -CustomAttribute "Bearbeiter").Value
-		$row.Telefon =		""
-		$row.Typ =		""
-		$row.Wartungszeit =	""
-	}
-	ELSE
-	{
-		$row.Ansprechpartner =	""
-		$row.Telefon =		""
-		$row.Typ =		""
-		$row.Wartungszeit =	""
-	}
 	$row.Datastore =	$(Get-Datastore -Id $template.DatastoreIdList).Name
 	$list += $row
 
