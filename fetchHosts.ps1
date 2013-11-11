@@ -114,31 +114,6 @@ ForEach( $vmhost in Get-VMHost|Sort Name )
 	$row.Drs =		$parent.DrsEnabled
 	$row.DrsAutoLevel =	$parent.DrsAutomationLevel
 	$row.ESXVersion =	[System.Convert]::ToString( $vmhost.Version ) + "-" + [System.Convert]::ToString( $vmhost.Build )
-	IF( $creds.Host.Contains("smc")  )
-	{
-		$row.Gebaeude =		($vmhost | Get-Annotation -CustomAttribute "RZ Gebaeude").Value
-		$row.Seriennummer =	($vmhost | Get-Annotation -CustomAttribute "Seriennummer").Value
-	}
-	ELSEIF( $creds.Host.Contains("pvc")  )
-	{
-		$row.Gebaeude =		($vmhost | Get-Annotation -CustomAttribute "Gebäude").Value
-		$row.Seriennummer =	($vmhost | Get-Annotation -CustomAttribute "Seriennummer").Value
-	}
-	ELSEIF( $creds.Host.Contains("svc")  )
-	{
-		$row.Gebaeude =		($vmhost | Get-Annotation -CustomAttribute "RZ-Gebäude").Value
-		$row.Seriennummer =	($vmhost | Get-Annotation -CustomAttribute "Seriennummer").Value
-	}
-	ELSEIF( $creds.Host.Contains("tvc")  )
-	{
-		$row.Gebaeude =		($vmhost | Get-Annotation -CustomAttribute "RZ-Gebäude").Value
-		$row.Seriennummer =	($vmhost | Get-Annotation -CustomAttribute "Seriennummer").Value
-	}
-	ELSE
-	{
-		$row.Gebaeude =		""
-		$row.Seriennummer =	""
-	}
 	$row.Gateway =			$netInfo.ConsoleGateway
 	ForEach( $nameserver in $netInfo.DnsAddress )
 	{
